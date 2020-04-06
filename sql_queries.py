@@ -12,10 +12,10 @@ songplay_table_create = ("""
 CREATE TABLE IF NOT EXISTS songplays (
     songplay_id SERIAL
     ,start_time TIMESTAMP NOT NULL REFERENCES time(start_time)
-    ,user_id SERIAL NOT NULL REFERENCES users(user_id)
+    ,user_id INT NOT NULL REFERENCES users(user_id)
     ,level VARCHAR
-    ,song_id SERIAL REFERENCES songs(song_id)
-    ,artist_id SERIAL REFERENCES artists(artist_id)
+    ,song_id VARCHAR REFERENCES songs(song_id)
+    ,artist_id VARCHAR REFERENCES artists(artist_id)
     ,session_id SERIAL
     ,location VARCHAR
     ,user_agent VARCHAR
@@ -25,7 +25,7 @@ CREATE TABLE IF NOT EXISTS songplays (
 
 user_table_create = ("""
 CREATE TABLE IF NOT EXISTS users (
-    user_id SERIAL
+    user_id INT
     ,first_name VARCHAR
     ,last_name VARCHAR
     ,gender VARCHAR
@@ -36,9 +36,9 @@ CREATE TABLE IF NOT EXISTS users (
 
 song_table_create = ("""
 CREATE TABLE IF NOT EXISTS songs (
-    song_id SERIAL
+    song_id VARCHAR
     ,title VARCHAR
-    ,artist_id SERIAL
+    ,artist_id VARCHAR
     ,year INT
     ,duration INT
     ,PRIMARY KEY (song_id)
@@ -47,7 +47,7 @@ CREATE TABLE IF NOT EXISTS songs (
 
 artist_table_create = ("""
 CREATE TABLE IF NOT EXISTS artists (
-    artist_id SERIAL
+    artist_id VARCHAR
     ,name VARCHAR
     ,location VARCHAR
     ,latitude DOUBLE PRECISION
@@ -73,8 +73,7 @@ CREATE TABLE IF NOT EXISTS time (
 
 songplay_table_insert = ("""
 INSERT INTO songplays (
-    songplay_id
-    ,start_time
+    start_time
     ,user_id
     ,level
     ,song_id
@@ -83,7 +82,7 @@ INSERT INTO songplays (
     ,location
     ,user_agent
 ) VALUES (
-    {},{},{},{},{},{},{},{},{}
+    %s,%s,%s,%s,%s,%s,%s,%s
 );
 """)
 
@@ -95,7 +94,7 @@ INSERT INTO users (
     ,gender
     ,level
 ) VALUES (
-    {},{},{},{},{}
+    %s,%s,%s,%s,%s
 ) ON CONFLICT(user_id) 
     DO UPDATE SET level=EXCLUDED.level;
 """)
@@ -108,7 +107,7 @@ INSERT INTO songs (
     ,year
     ,duration
 ) VALUES (
-    {},{},{},{},{}
+    %s,%s,%s,%s,%s
 ) ON CONFLICT (song_id) DO NOTHING;
 """)
 
@@ -119,9 +118,9 @@ INSERT INTO artists (
     ,location
     ,latitude
     ,longitude
-) VALUES (
-    {},{},{},{},{}
-) ON CONFLICT (artists) DO NOTHING;
+) VALUES (    
+    %s,%s,%s,%s,%s
+) ON CONFLICT (artist_id) DO NOTHING;
 """)
 
 
@@ -135,7 +134,7 @@ INSERT INTO time (
     ,year
     ,weekday
 ) VALUES (
-    {},{},{},{},{},{},{}
+    %s,%s,%s,%s,%s,%s,%s
 ) ON CONFLICT (start_time) DO NOTHING;
 """)
 
@@ -148,13 +147,13 @@ SELECT
 FROM
     songs
     JOIN artists
-        ON artists.artists_id = songs.artist_id
+        ON artists.artist_id = songs.artist_id
 WHERE
-    songs.title = {}
+    songs.title = %s
     AND
-    artists.name = {}
+    artists.name = %s
     AND
-    songs.duration = {}
+    songs.duration = %s
 """)
 
 # QUERY LISTS
