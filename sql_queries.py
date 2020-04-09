@@ -147,19 +147,120 @@ staging_songs_copy = ('''
 
 # FINAL TABLES
 
+# Join if event song & artist match; only next songs
 songplay_table_insert = ('''
+INSERT INTO (
+    start_time
+    ,user_id
+    ,level
+    ,song_id
+    ,artist_id
+    ,session_id
+    ,location
+    ,user_agent
+)
+SELECT
+    TIMESTAMP 'epoch' + events.ts/1000 * INTERVAL '1 second' AS start_time, 
+    ,events.user_id AS user_id
+    ,events.level AS level
+    ,events.song_id AS song_id
+    ,songs.artist_id AS artist_id
+    ,events.session_id AS session_id
+    ,songs.artist_location AS location
+    ,events.user_agent AS user_agent
+FROM
+    staging_events AS events
+    JOIN staging_songs AS songs
+        ON songs.song_id = events.song_id
+            AND songs.artist_name = events.artist
+WHERE
+    events.page = 'NextSong'
 ''')
 
 user_table_insert = ('''
+INSERT INTO (
+    user_id
+    ,first_name
+    ,last_name
+    ,gender
+    ,level
+)
+SELECT DISTINCT
+    events.user_id AS user_id
+    ,events.first_name AS first_name
+    ,events.last_name AS last_name
+    ,events.gender AS gender
+    ,events.level AS level
+FROM
+    staging_events AS events
+WHERE
+    events.user_id IS NOT NULL
 ''')
 
 song_table_insert = ('''
+INSERT INTO (
+    song_id
+    ,title
+    ,artist_id
+    ,year
+    ,duration
+)
+SELECT DISTINCT
+    songs.song_id AS song_id
+    ,songs.title AS title
+    ,songs.artist_id AS artist_id
+    ,songs.year AS year
+    ,songs.duration AS duration
+FROM
+    staging_songs AS songs
+WHERE
+    songs.song_id IS NOT NULL
 ''')
 
 artist_table_insert = ('''
+INSERT INTO (
+    artist_id
+    ,name
+    ,location
+    ,latitude
+    ,longitude
+)
+SELECT DISTINCT
+    songs.artist_id AS artist_id
+    ,events.artist_name AS name
+    ,songs.artist_location AS location
+    ,songs.artist_latitude AS latitude
+    ,songs.artist_longitude AS longitude
+FROM
+    staging_songs AS songs
+WHERE
+    songs.artist_id IS NOT NULL
 ''')
 
 time_table_insert = ('''
+INSERT INTO (
+    start_time
+    ,hour
+    ,day
+    ,week
+    ,month
+    ,year
+    ,weekday
+)
+SELECT
+    start_time AS start_time
+    ,EXTRACT(hr FROM start_time) AS hour
+    ,EXTRACT(d FROM start_time) AS day
+    ,EXTRACT(w FROM start_time) AS week
+    ,EXTRACT(mon FROM start_time) AS month
+    ,EXTRACT(yr FROM start_time) AS year
+    ,EXTRACT(weekday FROM start_time) AS weekday
+FROM (
+    SELECT DISTINCT 
+        TIMESTAMP 'epoch' + events.ts/1000 * INTERVAL '1 second' AS start_time 
+    FROM 
+        staging_events AS events
+)
 ''')
 
 # QUERY LISTS
