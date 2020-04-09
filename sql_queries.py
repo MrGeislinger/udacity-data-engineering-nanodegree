@@ -121,10 +121,29 @@ CREATE TABLE time (
 # STAGING TABLES
 
 staging_events_copy = ('''
-''').format()
+    COPY staging_events 
+    FROM '{}'
+    CREDENTIALS 'aws_iam_role={}'
+    region 'us-west-2' 
+    COMPUPDATE OFF STATUPDATE OFF
+    FORMAT as JSON '{}'
+''').format(
+        config.get('S3','LOG_DATA'),
+        config.get('IAM_ROLE','ARN'),
+        config.get('S3','LOG_JSONPATH')
+)
 
 staging_songs_copy = ('''
-''').format()
+    COPY staging_songs 
+    FROM '{}'
+    CREDENTIALS 'aws_iam_role={}'
+    region 'us-west-2' 
+    COMPUPDATE OFF STATUPDATE OFF
+    FORMAT as JSON 'auto'
+''').format(
+        config.get('S3','SONG_DATA'),
+        config.get('IAM_ROLE','ARN'),
+)
 
 # FINAL TABLES
 
