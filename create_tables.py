@@ -4,18 +4,35 @@ from sql_queries import create_table_queries, drop_table_queries
 
 
 def drop_tables(cur, conn):
+    '''
+    Drops all tables created in ETL
+    
+    Args:
+        cur: Cursor to execute query.
+        conn: Connection to database.
+    '''
     for query in drop_table_queries:
         cur.execute(query)
         conn.commit()
 
 
 def create_tables(cur, conn):
+    '''
+    Creates all tables to load data into.
+    
+    Args:
+        cur: Cursor to execute query.
+        conn: Connection to database.
+    '''
     for query in create_table_queries:
         cur.execute(query)
         conn.commit()
 
 
 def main():
+    '''
+    Drops tables if they were created and creates tables for database.
+    '''
     config = configparser.ConfigParser()
     config.read('dwh.cfg')
 
