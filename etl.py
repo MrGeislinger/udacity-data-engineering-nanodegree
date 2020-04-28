@@ -3,7 +3,7 @@ from datetime import datetime
 import os
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import udf, col
-from pyspark.sql.functions import year, month, dayofmonth, hour, weekofyear, date_format
+from pyspark.sql.functions import year, month, dayofmonth, hour, weekofyear, date_format, dayofweek, monotonically_increasing_id
 
 
 config = configparser.ConfigParser()
@@ -23,7 +23,7 @@ def create_spark_session():
 
 def process_song_data(spark, input_data, output_data):
     # get filepath to song data file
-    song_data = '{}/song_data'.format(input_data)
+    song_data = '{}/song_data/*/*/*/*.json'.format(input_data)
     
     # read song data file
     df = spark.read.json(song_data)
@@ -84,42 +84,127 @@ def process_song_data(spark, input_data, output_data):
 
 def process_log_data(spark, input_data, output_data):
     # get filepath to log data file
-    log_data =
+    log_data = '{}/log_data/*.json'.format(input_data)
 
     # read log data file
-    df = 
+    df_all = spark.read.json(log_data)
     
     # filter by actions for song plays
-    df = 
+    df = df_all.filter(df_all.page == 'NextSong').select(
+                                            'ts',
+                                            'userId',
+                                            'level',
+                                            'song',
+                                            'artist',
+                                            'sessionId',
+                                            'location',
+                                            'userAgent'
+                                        )
 
     # extract columns for users table    
-    artists_table = 
+    users_table = df_all.select(
+                        'userId',
+                        'firstName',
+                        'lastName',
+                        'gender',
+                        'level'
+                    ).dropDuplicates()
+    users_table.createOrReplaceTempView('users')
     
     # write users table to parquet files
-    artists_table
+    users_table.write.parquet(
+                            os.path.join(
+                                output_data,
+                                'users/users.parquet'
+                            ),
+                            'overwrite'
+                        )
 
     # create timestamp column from original timestamp column
-    get_timestamp = udf()
-    df = 
+    get_timestamp = get_timestamp = udf(lambda x: str(int(int(x)/1000)))
+    df = df.withColumn('timestamp', get_timestamp(df.ts))
     
     # create datetime column from original timestamp column
-    get_datetime = udf()
-    df = 
+    get_datetime = udf(lambda x: str(datetime.fromtimestamp(int(x) / 1000)))
+    df = df.withColumn('datetime', get_datetime(df.ts))
     
     # extract columns to create time table
-    time_table = 
+    time_table = df.select(
+                        'datetime'
+                    ).withColumn(
+                        'start_time',
+                        df.datetime
+                    ).withColumn(
+                        'hour',
+                        hour('datetime')
+                    ).withColumn(
+                        'day',
+                        dayofmonth('datetime')
+                    ).withColumn(
+                        'week',
+                        weekofyear('datetime')
+                    ).withColumn(
+                        'month',
+                        month('datetime')
+                    ).withColumn(
+                        'year',
+                        year('datetime')
+                    ).withColumn(
+                        'weekday',
+                        dayofweek('datetime')
+                    ).dropDuplicates()
     
     # write time table to parquet files partitioned by year and month
-    time_table
+    time_table.write.partitionBy(
+                        'year',
+                        'month'
+                    ).parquet(
+                        os.path.join(
+                                    output_data,
+                                    'time/time.parquet'
+                        ), 
+                        'overwrite'
+                    )
 
     # read in song data to use for songplays table
-    song_df = 
+    song_df = spark.read.json(
+                    '{}/song_data/*/*/*/*.json'.format(input_data)
+    )
 
-    # extract columns from joined song and log datasets to create songplays table 
-    songplays_table = 
+    # extract columns from joined song and log datasets to create songplays table
+    df = df.alias('log_df')
+    song_df = song_df.alias('song_df')
+    # joined_df = df.join(
+    #             song_df, 
+    #             col('log_df.artist') == col('song_df.artist_name'),
+    #             'inner'
+    #         )
+    songplays_table = df.join(
+                        song_df, 
+                        col('log_df.artist') == col('song_df.artist_name'),
+                        'inner'
+                    ).select(
+                        col('log_df.datetime').alias('start_time'),
+                        col('log_df.userId').alias('user_id'),
+                        col('log_df.level').alias('level'),
+                        col('song_df.song_id').alias('song_id'),
+                        col('song_df.artist_id').alias('artist_id'),
+                        col('log_df.sessionId').alias('session_id'),
+                        col('log_df.location').alias('location'), 
+                        col('log_df.userAgent').alias('user_agent'),
+                        year('log_df.datetime').alias('year'),
+                        month('log_df.datetime').alias('month')
+                    ).withColumn(
+                        'songplay_id',
+                        monotonically_increasing_id()
+                    )
+    songplays_table.createOrReplaceTempView('songplays')
 
     # write songplays table to parquet files partitioned by year and month
-    songplays_table
+    songplays_table.write.partitionBy(
+        'year', 'month').parquet(os.path.join(output_data,
+                                 'songplays/songplays.parquet'),
+                                 'overwrite')
 
 
 def main():
