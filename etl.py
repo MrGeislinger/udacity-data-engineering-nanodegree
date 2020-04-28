@@ -14,6 +14,9 @@ os.environ['AWS_SECRET_ACCESS_KEY']=config['AWS_SECRET_ACCESS_KEY']
 
 
 def create_spark_session():
+    '''
+    Creates and returns a Spark session.
+    '''
     spark = SparkSession \
         .builder \
         .config("spark.jars.packages", "org.apache.hadoop:hadoop-aws:2.7.0") \
@@ -22,6 +25,15 @@ def create_spark_session():
 
 
 def process_song_data(spark, input_data, output_data):
+    '''
+    Load dataset and extract for song & artist tables to be written into parquet
+    files.
+
+    Args:
+        spark:                 Spark session to act on.
+        input_data (string):   Path to read data from.
+        output_data (string):  Path to write parquet files to.
+    '''
     # get filepath to song data file
     song_data = '{}/song_data/*/*/*/*.json'.format(input_data)
     
@@ -83,6 +95,15 @@ def process_song_data(spark, input_data, output_data):
 
 
 def process_log_data(spark, input_data, output_data):
+    '''
+    Load both song & log datasets and extract for users & times tables to be
+    written into parquet files.
+
+    Args:
+        spark:                 Spark session to act on.
+        input_data (string):   Path to read data from.
+        output_data (string):  Path to write parquet files to.  
+    '''
     # get filepath to log data file
     log_data = '{}/log_data/*.json'.format(input_data)
 
@@ -174,11 +195,7 @@ def process_log_data(spark, input_data, output_data):
     # extract columns from joined song and log datasets to create songplays table
     df = df.alias('log_df')
     song_df = song_df.alias('song_df')
-    # joined_df = df.join(
-    #             song_df, 
-    #             col('log_df.artist') == col('song_df.artist_name'),
-    #             'inner'
-    #         )
+
     songplays_table = df.join(
                         song_df, 
                         col('log_df.artist') == col('song_df.artist_name'),
@@ -208,6 +225,10 @@ def process_log_data(spark, input_data, output_data):
 
 
 def main():
+    '''
+    Creates spark session and writes parquet files from extracted & transformed
+    data.
+    '''
     spark = create_spark_session()
     input_data = "s3a://udacity-dend"
     output_data = ""
