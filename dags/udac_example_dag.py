@@ -69,24 +69,32 @@ load_songplays_table = LoadFactOperator(
     sql=SqlQueries.songplay_table_insert,
     dag=dag
 )
-#TODO
-load_user_dimension_table = LoadDimensionOperator(
-    task_id='Load_user_dim_table',
-    dag=dag
-)
-#TODO
+
+## Insert data into dimensional tables
+
 load_song_dimension_table = LoadDimensionOperator(
     task_id='Load_song_dim_table',
+    conn_id='redshift',
+    table='songs',
+    sql=SqlQueries.song_table_insert,
     dag=dag
 )
-#TODO
+
 load_artist_dimension_table = LoadDimensionOperator(
     task_id='Load_artist_dim_table',
+    conn_id='redshift',
+    table='artists',
+    sql=SqlQueries.artist_table_insert,
+    append=True,
+    primary_key="artistid",
     dag=dag
 )
-#TODO
+
 load_time_dimension_table = LoadDimensionOperator(
     task_id='Load_time_dim_table',
+    conn_id='redshift',
+    table='time',
+    sql=SqlQueries.time_table_insert,
     dag=dag
 )
 #TODO 
