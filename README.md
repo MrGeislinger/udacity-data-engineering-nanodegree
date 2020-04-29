@@ -1,5 +1,3 @@
-/opt/airflow/start.sh
-
 # Data Pipeline Airflow Example Project
 
 ## Summary
