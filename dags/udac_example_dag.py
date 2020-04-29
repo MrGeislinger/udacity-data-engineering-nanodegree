@@ -48,7 +48,7 @@ stage_events_to_redshift = StageToRedshiftOperator(
     dag=dag
 )
 
-# Stage songs to Reshift
+# Stage songs to Redshift
 stage_songs_to_redshift = StageToRedshiftOperator(
     task_id='Stage_songs',
     aws_credentials_id='aws_credentials',
@@ -60,9 +60,13 @@ stage_songs_to_redshift = StageToRedshiftOperator(
     conn_id='redshift',
     dag=dag
 )
-#TODO
+
+# Insert data into songplays table
 load_songplays_table = LoadFactOperator(
     task_id='Load_songplays_fact_table',
+    conn_id='redshift',
+    table='songplays',
+    sql=SqlQueries.songplay_table_insert,
     dag=dag
 )
 #TODO
