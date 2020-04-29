@@ -97,9 +97,13 @@ load_time_dimension_table = LoadDimensionOperator(
     sql=SqlQueries.time_table_insert,
     dag=dag
 )
-#TODO 
+
+# Check the data quality with a test query
 run_quality_checks = DataQualityOperator(
     task_id='Run_data_quality_checks',
+    conn_id='redshift',
+    test_query='SELECT COUNT(*) FROM songs WHERE songid IS NULL;',
+    test_result=0,
     dag=dag
 )
 
